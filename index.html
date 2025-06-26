@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Obsidian-Like Editor</title>
+
+        <!-- Markdown-it -->
+        <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
+
+        <!-- Highlight.js (optional) -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+        <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #1e1e1e;
+            color: #ddd;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .styled-div {
+            flex: 1;
+            padding: 1rem;
+            background: #2e2e2e;
+            border: 1px solid #444;
+            border-radius: 8px;
+            overflow-y: auto;
+            outline: none;
+            font-size: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .main-div {
+            width: 80%;
+            height: 80%;
+            display: flex;
+        }
+
+        .hidden {
+            flex: 0;
+            width: 0;
+            padding: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        .visible {
+            flex: 1;
+            width: 100%;
+            opacity: 1;
+        }
+
+        #preview img {
+          max-width: 100%;
+          height: auto;
+          object-fit: contain;
+          display: block;
+          margin: 0.5rem 0;
+          border-radius: 4px;
+        }
+        #preview * {
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        #preview code {
+            background: #333;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        #preview pre {
+            background: #1a1a1a;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        </style>
+    </head>
+    <body>
+
+        <div class="main-div">
+            <div id="editor" class="styled-div visible" contenteditable="true" spellcheck="false"></div>
+            <div id="preview" class="styled-div hidden"></div>
+        </div>
+
+        <script>
+        // Setup markdown-it with highlight.js
+        const md = window.markdownit({
+            html: false,
+            linkify: true,
+            breaks: true,
+            highlight: function (str, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    try {
+                        return '<pre class="hljs"><code>' +
+                            hljs.highlight(str, { language: lang }).value +
+                            '</code></pre>';
+                    } catch (_) {}
+                }
+                return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+            }
+        });
+
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+
+        let typingTimer;
+        const TYPING_DELAY = 1000;
+        let rawTextBuffer = '';
+        let mdBuffer = '';
+
+        function renderMarkdown(text) {
+            return md.render(text);
+        }
+
+        function updatePreview() {
+            preview.classList.remove('hidden');
+            preview.classList.add('visible');
+
+            editor.classList.remove('visible');
+            editor.classList.add('hidden');
+
+            preview.innerHTML = mdBuffer;
+        }
+
+        function placeCaretAtEnd(el) {
+            el.focus();
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        editor.addEventListener('input', () => {
+            preview.classList.remove('visible');
+            preview.classList.add('hidden');
+
+            editor.classList.remove('hidden');
+            editor.classList.add('visible');
+
+            rawTextBuffer = editor.innerText;
+            mdBuffer = renderMarkdown(rawTextBuffer);
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(updatePreview, TYPING_DELAY);
+        });
+
+        preview.addEventListener('click', () => {
+            editor.classList.remove('hidden');
+            editor.classList.add('visible');
+
+            preview.classList.remove('visible');
+            preview.classList.add('hidden');
+            placeCaretAtEnd(editor);
+        });
+        </script>
+    </body>
+</html>
